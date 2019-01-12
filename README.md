@@ -4,8 +4,11 @@
 外网想访问公司内网的http接口。
 ## 模块介绍
 fwd-common：
+
 fwd-client：用于访问真实的web服务。需配置fwd-server地址、真实web服务在fwd-server中的映射关系
+
 fwd-server：提供web服务，通过注册的web映射关系转换，将http请求转发给fwd-client，由fwd-client访问，最终将访问结果返回给用户
+
 web-demo：用于测试web的服务
 
 ## 原理
