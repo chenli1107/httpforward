@@ -1,7 +1,7 @@
 ## 简介
 用于http转发。
 ## 场景
-外网想访问公司内网的http接口。
+外网想访问公司内网的http接口。暂仅支持http的postjson、get请求
 ## 模块介绍
 fwd-common：
 
