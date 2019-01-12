@@ -40,10 +40,10 @@ public class ConnectionServer {
 
     private Bootstrap bootstap;
     //2.定义执行线程组
-    EventLoopGroup worker = new NioEventLoopGroup();
+    private EventLoopGroup worker = new NioEventLoopGroup();
 
-    @PostConstruct
-    public void bootstrap(){
+
+    public ConnectionServer(){
         //1.定义服务类
         bootstap = new Bootstrap();
         //2.定义执行线程组
@@ -66,6 +66,7 @@ public class ConnectionServer {
             }
         });
     }
+
 
     @PreDestroy
     public void destory(){

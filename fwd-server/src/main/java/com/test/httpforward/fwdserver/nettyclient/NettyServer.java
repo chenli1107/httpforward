@@ -54,7 +54,7 @@ public class NettyServer {
                 ChannelPipeline pipeline = channel.pipeline();
 
                 // 请求解码器
-                pipeline.addLast("ping", new IdleStateHandler(60, 0, 0,
+                pipeline.addLast("ping", new IdleStateHandler(60, 0, 15,
                         TimeUnit.SECONDS));
                 pipeline.addLast(new JsonObjectDecoder());
                 pipeline.addLast(new JsonToObjectInHandler());

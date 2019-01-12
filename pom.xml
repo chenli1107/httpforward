@@ -13,6 +13,7 @@
       <module>fwd-common</module>
       <module>fwd-client</module>
       <module>fwd-server</module>
+	  <module>web-demo</module>
   </modules>
 
 	<parent>

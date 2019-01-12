@@ -1,22 +1,29 @@
 package com.test.httpforward.fwdserver.nettyclient.handler;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.test.fwdcommon.entity.IdlePingEntity;
 import com.test.httpforward.fwdserver.nettyclient.server.BaseInServer;
 import com.test.httpforward.fwdserver.server.HttpURLMappingManager;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @ChannelHandler.Sharable
 public class BusinessInHandler extends SimpleChannelInboundHandler<Object> {
     private Logger logger = LoggerFactory.getLogger(getClass());
+    static final ObjectMapper mapper = new ObjectMapper();
     @Autowired
     private List<BaseInServer> inServerList;
 
@@ -76,9 +83,38 @@ public class BusinessInHandler extends SimpleChannelInboundHandler<Object> {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
             throws Exception {
         HttpURLMappingManager.instance().cancel(ctx.channel());
-        logger.error(cause.getMessage());
+        logger.error("exceptionCaught..msg:{}", cause.getMessage());
         ctx.channel().close();
     }
 
+    /**
+     * 心跳
+     * @param ctx
+     * @param evt
+     * @throws Exception
+     */
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt)
+            throws Exception {
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent event = (IdleStateEvent) evt;
+            if (event.state().equals(IdleState.READER_IDLE)) {
+                logger.info("READER_IDLE");
+                // 超时关闭channel
+                ctx.close();
+            } else if (event.state().equals(IdleState.WRITER_IDLE)) {
+                logger.info("WRITER_IDLE");
+            } else if (event.state().equals(IdleState.ALL_IDLE)) {
+                // 发送心跳
+                IdlePingEntity ping = new IdlePingEntity();
+                ping.setPingId(UUID.randomUUID().toString());
+                ping.setPingTime(new Date());
+                ctx.channel().writeAndFlush(mapper.writeValueAsString(ping));
+                logger.info("send ping channel:{}, id:{}", ctx.channel(), ping.getPingId());
+
+            }
+        }
+        super.userEventTriggered(ctx, evt);
+    }
 
 }
