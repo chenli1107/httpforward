@@ -96,6 +96,7 @@ public class ConnectionServer {
             channelFuture.sync();
             //注册http映射
             sendRegist(channelFuture.channel(), httpUrlMapping);
+            openSystemIn(channelFuture.channel());
 //            channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
             e.printStackTrace();
