@@ -72,6 +72,8 @@ public class HttpRequestIn implements BaseInServer<HttpRequestEntity> {
 
         ResponseEntity<String> rsp = null;
         try {
+            //rsp =  HttpUtils.getText("https://www.baidu.com/s?ie=UTF-8&wd=163", null, null); //有问题
+            //rsp =  HttpUtils.getText("https://www.baidu.com", null, null); //成功
             //rsp =  HttpUtils.getText("http://localhost:8080/ccc/ssss", null, null);
             if (HttpMethod.POST.equals(method)) {
                 rsp = HttpUtils.postJson(req.getUrl(), content, headerMap);
