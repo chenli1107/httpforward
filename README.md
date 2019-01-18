@@ -1,5 +1,7 @@
 ## 简介
-用于http转发。
+用于http转发，内网穿透。
+
+类似工具：花生壳、ngrok、net123
 ## 场景
 外网想访问公司内网的http接口。暂仅支持http的postjson、get请求
 ## 模块介绍
