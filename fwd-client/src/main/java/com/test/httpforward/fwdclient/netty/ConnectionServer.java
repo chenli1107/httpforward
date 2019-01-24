@@ -91,12 +91,13 @@ public class ConnectionServer {
                     }, 3L, TimeUnit.SECONDS);
                 } else {
                     logger.info("服务端链接成功...");
+                    //注册http映射
+                    sendRegist(channelFuture.channel(), httpUrlMapping);
+                    openSystemIn(channelFuture.channel());
                 }
             });
             channelFuture.sync();
-            //注册http映射
-            sendRegist(channelFuture.channel(), httpUrlMapping);
-            openSystemIn(channelFuture.channel());
+
 //            channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
             e.printStackTrace();
