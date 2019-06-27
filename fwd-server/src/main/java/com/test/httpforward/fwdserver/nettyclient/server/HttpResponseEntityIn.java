@@ -15,6 +15,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 import static io.netty.handler.codec.rtsp.RtspHeaderNames.CONTENT_LENGTH;
 
 @Service
@@ -33,11 +35,9 @@ public class HttpResponseEntityIn implements BaseInServer<HttpResponseEntity> {
         FullHttpResponse response = new DefaultFullHttpResponse(
                 HttpVersion.valueOf(msg.getHttpVersion()), msg.getHttpRspStatus(),
                 Unpooled.wrappedBuffer(msg.getContentBytes()));
-        if (msg.getHeaders() != null) {
-            msg.getHeaders().forEach((he) -> {
-                response.headers().add(he.getKey(), he.getValue());
-            });
-        }
+        Optional.ofNullable(msg.getHeaders()).ifPresent(headers-> headers.forEach((he) -> {
+            response.headers().add(he.getKey(), he.getValue());
+        }));
         response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
         //向浏览器输出response
         Channel httpChannel = httpRequestCacheManager.remove(msg.getRequestId());
