@@ -1,27 +1,19 @@
 package com.test.httpforward.fwdserver;
 
-import com.test.httpforward.fwdserver.nettyclient.NettyServer;
-import com.test.httpforward.fwdserver.nettyweb.NettyHttpServer;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
-@Configuration
+@Component
 public class AppConfig {
+    @Value("${http.netty.web.port:9090}")
+    private int webPort;
 
-//    @Bean(initMethod="serverStart")
-////    @DependsOn({"httpURLMappingManager"})
-//    public NettyServer nettyServer(){
-//        return new NettyServer();
-//    }
-//
-//    @Bean(initMethod="serverStart")
-//    public NettyHttpServer nettyHttpServer(){
-//        return new NettyHttpServer();
-//    }
+    public int getWebPort() {
+        return webPort;
+    }
 
+    public void setWebPort(int webPort) {
+        this.webPort = webPort;
+    }
 
-//    @Bean
-//    public HttpURLMappingManager httpURLMappingManager(){
-//        return new HttpURLMappingManager();
-//    }
 }

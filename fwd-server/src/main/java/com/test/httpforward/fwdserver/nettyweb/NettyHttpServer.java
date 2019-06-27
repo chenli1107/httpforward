@@ -1,5 +1,6 @@
 package com.test.httpforward.fwdserver.nettyweb;
 
+import com.test.httpforward.fwdserver.AppConfig;
 import com.test.httpforward.fwdserver.nettyweb.handler.HttpRequestInHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -22,8 +23,8 @@ public class NettyHttpServer {
     private Logger logger = LoggerFactory.getLogger(getClass());
     @Autowired
     private HttpRequestInHandler httpRequestInHandler;
-    @Value("${http.netty.web.port:9090}")
-    private int webPort;
+    @Autowired
+    private AppConfig appConfig;
 
     @PostConstruct
     public void serverStart(){
@@ -72,8 +73,8 @@ public class NettyHttpServer {
 
         //7.绑定ip和port
         try {
-            ChannelFuture channelFuture = serverBootstrap.bind(webPort).sync();//Future模式的channel对象
-            logger.info(">>>>>>>>>NettyHttpServer init success...webPort:{}<<<<<<<<<<<", webPort);
+            ChannelFuture channelFuture = serverBootstrap.bind(appConfig.getWebPort()).sync();//Future模式的channel对象
+            logger.info(">>>>>>>>>NettyHttpServer init success...webPort:{}<<<<<<<<<<<", appConfig.getWebPort());
             //7.5.监听关闭
             channelFuture.channel().closeFuture().sync();  //等待服务关闭，关闭后应该释放资源
         } catch (InterruptedException e) {

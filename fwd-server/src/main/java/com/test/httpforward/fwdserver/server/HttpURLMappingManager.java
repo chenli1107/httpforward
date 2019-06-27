@@ -3,6 +3,8 @@ package com.test.httpforward.fwdserver.server;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.test.fwdcommon.entity.HttpUrlMapping;
 import com.test.fwdcommon.entity.HttpUrlMappingResult;
+import com.test.fwdcommon.utils.SpringContextHolder;
+import com.test.httpforward.fwdserver.AppConfig;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,20 +46,20 @@ public class HttpURLMappingManager {
         if(oldMapping == null) {
             urlMap.put(mapping.getProxyServerPath(), mapping);
             res.setSuccess(true);
-            res.setMsg("注册成功");
+            res.setMsg("注册成功"+ fullMapDesc(mapping));
             logger.warn("client regist: {}", res);
             return res;
         }
         if(!oldMapping.getProxyClientChannel().equals(mapping.getProxyClientChannel())){
             res.setSuccess(false);
-            res.setMsg("个性化地址已被注");
+            res.setMsg("个性化地址已被注"+ fullMapDesc(mapping));
             logger.warn("client regist: {}", res);
             return res;
         }
         //更新real地址。。mapping.setRealWebServerPath();mapping.setRealWebServerHost();
         urlMap.put(mapping.getProxyServerPath(), mapping);
         res.setSuccess(true);
-        res.setMsg("注册成功");
+        res.setMsg("注册成功"+ fullMapDesc(mapping));
         logger.warn("client regist: {}", res);
         return res;
     }
@@ -74,4 +76,7 @@ public class HttpURLMappingManager {
         }
     }
 
+    private static String fullMapDesc(HttpUrlMapping mapping){
+        return "["+ mapping.getRealWebServerHost()+mapping.getRealWebServerPath() +"]-->>[proxyServerIp:"+ SpringContextHolder.getBean(AppConfig.class).getWebPort()+mapping.getProxyServerPath()+"]";
+    }
 }
