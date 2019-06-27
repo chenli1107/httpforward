@@ -6,6 +6,7 @@ public class HttpUrlMappingResult extends BaseEntity{
     private boolean success;
     private String msg;
     private HttpUrlMapping mapping;
+    private Integer serverWebPort;
 
     public boolean isSuccess() {
         return success;
@@ -29,6 +30,14 @@ public class HttpUrlMappingResult extends BaseEntity{
 
     public void setMapping(HttpUrlMapping mapping) {
         this.mapping = mapping;
+    }
+
+    public Integer getServerWebPort() {
+        return serverWebPort;
+    }
+
+    public void setServerWebPort(Integer serverWebPort) {
+        this.serverWebPort = serverWebPort;
     }
 
     @Override

@@ -42,6 +42,7 @@ public class HttpURLMappingManager {
     public synchronized HttpUrlMappingResult regist(HttpUrlMapping mapping) {
         HttpUrlMappingResult res = new HttpUrlMappingResult();
         res.setMapping(mapping);
+        res.setServerWebPort(SpringContextHolder.getBean(AppConfig.class).getWebPort());
         HttpUrlMapping oldMapping = getHttpUrlMapping(mapping.getProxyServerPath());
         if(oldMapping == null) {
             urlMap.put(mapping.getProxyServerPath(), mapping);

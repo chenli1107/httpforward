@@ -3,6 +3,8 @@ package com.test.httpforward.fwdclient.netty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.test.fwdcommon.entity.HttpUrlMapping;
+import com.test.fwdcommon.utils.SpringContextHolder;
+import com.test.httpforward.fwdclient.AppConfig;
 import com.test.httpforward.fwdclient.netty.handler.BusinessInHandler;
 import com.test.httpforward.fwdclient.netty.handler.JsonToObjectInHandler;
 import io.netty.bootstrap.Bootstrap;
@@ -31,12 +33,11 @@ public class ConnectionServer {
     private Logger logger = LoggerFactory.getLogger(getClass());
     @Autowired
     private BusinessInHandler businessInHandler;
-    @Value("${forward.netty.server.ip:127.0.0.1}")
-    private String serverIp;
-    @Value("${forward.netty.server.port:9000}")
-    private int serverPort;
+
     @Autowired
     private HttpUrlMapping httpUrlMapping;
+    @Autowired
+    private AppConfig appConfig;
 
     private Bootstrap bootstap;
     //2.定义执行线程组
@@ -78,7 +79,7 @@ public class ConnectionServer {
         logger.info("开始建立连接...");
         try {
             //6.建立连接
-            ChannelFuture channelFuture = bootstap.connect(serverIp, serverPort);
+            ChannelFuture channelFuture = bootstap.connect(appConfig.getServerIp(), appConfig.getServerPort());
             channelFuture.addListener((ChannelFutureListener) cf -> {
                 //启动时，链接失败重连
                 if (!cf.isSuccess()) {
