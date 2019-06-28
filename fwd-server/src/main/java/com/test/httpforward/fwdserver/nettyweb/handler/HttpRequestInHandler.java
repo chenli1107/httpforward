@@ -84,7 +84,7 @@ public class HttpRequestInHandler extends SimpleChannelInboundHandler<FullHttpRe
             logger.info("无注册该服务客户端[{}]", proxyServerPath);
             FullHttpResponse response = new DefaultFullHttpResponse(
                     HttpVersion.HTTP_1_1, HttpResponseStatus.OK,
-                    Unpooled.wrappedBuffer("无注册该服务客户端".getBytes()));
+                    Unpooled.wrappedBuffer(("无注册该服务客户端"+proxyServerPath).getBytes()));
             response.headers().set("Content-Type", "text/plain; charset=UTF-8");
             response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
             channelHandlerContext.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
