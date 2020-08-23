@@ -1,7 +1,7 @@
 package com.test.httpforward.fwdserver.nettyweb;
 
-import com.test.httpforward.fwdserver.AppConfig;
-import com.test.httpforward.fwdserver.nettyweb.handler.HttpRequestInHandler;
+import com.test.httpforward.fwdserver.config.AppConfig;
+import com.test.httpforward.fwdserver.nettyweb.handler.HttpPackageReqHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -10,25 +10,23 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 
+@Slf4j
 @Component
 public class NettyHttpServer {
-    private Logger logger = LoggerFactory.getLogger(getClass());
     @Autowired
-    private HttpRequestInHandler httpRequestInHandler;
+    private HttpPackageReqHandler httpRequestInHandler;
     @Autowired
     private AppConfig appConfig;
 
     @PostConstruct
     public void serverStart(){
-        logger.info(">>>>>>>>>NettyHttpServer init start<<<<<<<<<<<");
+        log.info(">>>>>>>>>NettyHttpServer init start<<<<<<<<<<<");
         new Thread(()->{
             start();
         }).start();
@@ -74,12 +72,11 @@ public class NettyHttpServer {
         //7.绑定ip和port
         try {
             ChannelFuture channelFuture = serverBootstrap.bind(appConfig.getWebPort()).sync();//Future模式的channel对象
-            logger.info(">>>>>>>>>NettyHttpServer init success...webPort:{}<<<<<<<<<<<", appConfig.getWebPort());
+            log.info(">>>>>>>>>NettyHttpServer init success...webPort:{}<<<<<<<<<<<", appConfig.getWebPort());
             //7.5.监听关闭
             channelFuture.channel().closeFuture().sync();  //等待服务关闭，关闭后应该释放资源
         } catch (InterruptedException e) {
-            System.out.println("server start got exception!");
-            e.printStackTrace();
+            log.error("server start exception!", e);
         }finally {
             //8.优雅的关闭资源
             boss.shutdownGracefully();

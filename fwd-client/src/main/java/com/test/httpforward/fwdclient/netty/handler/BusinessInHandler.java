@@ -1,23 +1,25 @@
 package com.test.httpforward.fwdclient.netty.handler;
 
-import com.test.fwdcommon.entity.HttpUrlMapping;
+import cn.hutool.json.JSONUtil;
+import com.test.httpforward.fwdclient.config.AppConfig;
 import com.test.httpforward.fwdclient.netty.ConnectionServer;
-import com.test.httpforward.fwdclient.netty.server.BaseInServer;
+import com.test.fwdcommon.face.BaseInServer;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 @Component
 @ChannelHandler.Sharable
 public class BusinessInHandler extends SimpleChannelInboundHandler<Object> {
-    private Logger logger = LoggerFactory.getLogger(getClass());
+    @Autowired
+    AppConfig appConfig;
     @Autowired
     private List<BaseInServer> inServerList;
     @Autowired
@@ -27,23 +29,29 @@ public class BusinessInHandler extends SimpleChannelInboundHandler<Object> {
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         if(msg == null)
             return;
-        msgHandle(ctx, msg);
-    }
-
-    private void msgHandle(ChannelHandlerContext ctx, Object msg) throws Exception {
-        for(int i=0; i<inServerList.size(); i++){
-            BaseInServer sv = inServerList.get(i);
+        for(BaseInServer sv : inServerList){
             if(sv.supports(msg)) {
                 sv.channelRead0(ctx, msg);
                 return;
             }
         }
-        return;
+    }
+
+
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+        super.channelRegistered(ctx);
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        ctx.channel().writeAndFlush(JSONUtil.toJsonStr(appConfig.getClientRegReq()));
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.error("与服务器断开连接服务器.将尝试重连"+ctx.channel());
+        log.error("与服务器断开连接服务器.将尝试重连"+ctx.channel());
         //重新连接服务器
         ctx.channel().eventLoop().schedule(new Runnable() {
             @Override

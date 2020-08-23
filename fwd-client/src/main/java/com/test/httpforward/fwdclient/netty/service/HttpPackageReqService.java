@@ -1,21 +1,17 @@
-package com.test.httpforward.fwdclient.netty.server;
+package com.test.httpforward.fwdclient.netty.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.test.fwdcommon.entity.HttpRequestEntity;
-import com.test.fwdcommon.entity.HttpResponseEntity;
-import com.test.fwdcommon.utils.HttpResponseStatusSerializer;
+import com.test.fwdcommon.entity.req.HttpPackageReq;
+import com.test.fwdcommon.entity.rsp.HttpPackageRsp;
 import com.test.fwdcommon.utils.HttpUtils;
-import com.test.httpforward.fwdclient.netty.server.BaseInServer;
+import com.test.fwdcommon.face.BaseInServer;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.*;
-import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -23,31 +19,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
-public class HttpRequestIn implements BaseInServer<HttpRequestEntity> {
-    private Logger logger = LoggerFactory.getLogger(getClass());
-    static final ObjectMapper mapper222 = new ObjectMapper();
-
-    static {
-        SimpleModule module = new SimpleModule();
-        module.addSerializer(HttpResponseStatus.class, new HttpResponseStatusSerializer());
-        mapper222.registerModule(module);
-    }
+public class HttpPackageReqService implements BaseInServer<HttpPackageReq> {
+    ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public boolean supports(Object msg) {
-        return msg instanceof HttpRequestEntity;
+        return msg instanceof HttpPackageReq;
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, HttpRequestEntity msg) throws Exception {
-        logger.info("receive req: {}", new ObjectMapper().writeValueAsString(msg));
-        HttpResponseEntity rsp = httpRequestSend(msg);
+    public void channelRead0(ChannelHandlerContext ctx, HttpPackageReq msg) throws Exception {
+        log.info("receive req: {}", new ObjectMapper().writeValueAsString(msg));
+        HttpPackageRsp rsp = httpRequestSend(msg);
         if (rsp == null)
             return;
-        String rspStr = mapper222.writeValueAsString(rsp);
-        ctx.channel().writeAndFlush(rspStr).addListener((GenericFutureListener) future -> {
-            logger.info("send request[{}] rsp:{}", msg.getRequestId(), rspStr);
+        ctx.channel().writeAndFlush(mapper.writeValueAsString(rsp)).addListener((GenericFutureListener) future -> {
+            log.info("send request[{}] rsp:{}", msg.getRequestId(), mapper.writeValueAsString(rsp));
         });
     }
 
@@ -57,7 +46,7 @@ public class HttpRequestIn implements BaseInServer<HttpRequestEntity> {
      * @return
      */
     // TODO http调用。。。待优调整
-    private HttpResponseEntity httpRequestSend(HttpRequestEntity req) {
+    private HttpPackageRsp httpRequestSend(HttpPackageReq req) {
         HttpMethod method = HttpMethod.valueOf(req.getMethodName());
         String content = req.getContentBytes()==null ? null : new String(req.getContentBytes(), Charset.defaultCharset());
         Map<String, String> headerMap = new HashMap<>();
@@ -70,6 +59,10 @@ public class HttpRequestIn implements BaseInServer<HttpRequestEntity> {
             });
         }
 
+        HttpPackageRsp response = new HttpPackageRsp();
+        response.setRequestId(req.getRequestId());
+        response.setHttpVersion(HttpVersion.HTTP_1_1.text());
+
         ResponseEntity<String> rsp = null;
         try {
             //rsp =  HttpUtils.getText("https://www.baidu.com/s?ie=UTF-8&wd=163", null, null); //有问题
@@ -80,16 +73,20 @@ public class HttpRequestIn implements BaseInServer<HttpRequestEntity> {
             } else if (HttpMethod.GET.equals(method)) {
                 rsp = HttpUtils.getText(req.getUrl(), null, headerMap);
             }
+        }catch (HttpClientErrorException he){
+            response.setHttpRspStatus(new HttpPackageRsp.HttpRspStatus(he.getStatusCode().value(), he.getStatusCode().getReasonPhrase()));
+            response.setContentBytes(he.getResponseBodyAsString().getBytes(Charset.defaultCharset()));
+            log.warn("http请求失败.url[{}]", req.getUrl(), he);
+            return response;
         }catch (Exception e){
-            HttpResponseEntity err = errorResponse(req.getRequestId(), req.getUrl(), e.getMessage());
-            logger.warn("http请求失败.url[{}],exception[{}]", req.getUrl(), e.getMessage());
+            HttpPackageRsp err = errorResponse(req.getRequestId(), req.getUrl(), e.getMessage());
+            log.error("http请求失败.url[{}]", req.getUrl(), e);
             return err;
         }
 
-        HttpResponseEntity response = new HttpResponseEntity();
-        response.setRequestId(req.getRequestId());
-        response.setHttpVersion(HttpVersion.HTTP_1_1.text());
-        response.setHttpRspStatus(new HttpResponseStatus(rsp.getStatusCode().value(), rsp.getStatusCode().getReasonPhrase()));
+
+        response.setHttpRspStatus(new HttpPackageRsp.HttpRspStatus(rsp.getStatusCode().value(), rsp.getStatusCode().getReasonPhrase()));
+        response.setContentBytes(rsp.getBody().getBytes(Charset.defaultCharset()));
         if(rsp.getHeaders()!=null){
             List<Map.Entry<String, String>> headers = new ArrayList<>();
             rsp.getHeaders().forEach((k, vList)->{
@@ -115,13 +112,11 @@ public class HttpRequestIn implements BaseInServer<HttpRequestEntity> {
             });
             response.setHeaders(headers);
         }
-
-        response.setContentBytes(rsp.getBody().getBytes(Charset.defaultCharset()));
         return response;
     }
 
 
-    private HttpResponseEntity errorResponse(String requestId, String requestUrl, String errorContent ){
+    private HttpPackageRsp errorResponse(String requestId, String requestUrl, String errorContent ){
         List<Map.Entry<String, String>> headers = new ArrayList<>();
         headers.add(new Map.Entry<String, String>() {
             @Override
@@ -140,10 +135,11 @@ public class HttpRequestIn implements BaseInServer<HttpRequestEntity> {
             }
         });
         errorContent = "调用["+ requestUrl +"]失败."+ (errorContent==null? "" : errorContent);
-        HttpResponseEntity response = new HttpResponseEntity();
+        HttpPackageRsp response = new HttpPackageRsp();
         response.setRequestId(requestId);
         response.setHttpVersion(HttpVersion.HTTP_1_1.text());
-        response.setHttpRspStatus(HttpResponseStatus.FORBIDDEN);
+        response.setHttpRspStatus(
+                new HttpPackageRsp.HttpRspStatus(HttpResponseStatus.FORBIDDEN.code(), HttpResponseStatus.FORBIDDEN.reasonPhrase()));
         response.setHeaders(headers);
         response.setContentBytes(errorContent.getBytes(Charset.defaultCharset()));
         return response;

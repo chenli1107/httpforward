@@ -1,12 +1,12 @@
 package com.test.fwdcommon.entity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Data;
 
 import java.io.Serializable;
 
+@Data
 public class BaseEntity implements Serializable{
     public static final String CLASS_NAME_FIELD = "decodeToClass";
-    public static final ObjectMapper mapper = new ObjectMapper();
 
     //用于Json转对象
     private String decodeToClass;
@@ -14,10 +14,5 @@ public class BaseEntity implements Serializable{
     public String getDecodeToClass() {
         return this.getClass().getName();
     }
-
-    public void setDecodeToClass(String decodeToClass) {
-        this.decodeToClass = decodeToClass;
-    }
-
 }
 

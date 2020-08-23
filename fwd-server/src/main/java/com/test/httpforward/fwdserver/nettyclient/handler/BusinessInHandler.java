@@ -1,17 +1,15 @@
 package com.test.httpforward.fwdserver.nettyclient.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.test.fwdcommon.entity.IdlePingEntity;
-import com.test.httpforward.fwdserver.nettyclient.server.BaseInServer;
-import com.test.httpforward.fwdserver.server.HttpURLMappingManager;
-import io.netty.channel.Channel;
+import com.test.fwdcommon.entity.req.IdlePingEntity;
+import com.test.httpforward.fwdserver.channel.service.IChannelRegService;
+import com.test.fwdcommon.face.BaseInServer;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -21,28 +19,29 @@ import java.util.UUID;
 
 @Component
 @ChannelHandler.Sharable
+@Slf4j
 public class BusinessInHandler extends SimpleChannelInboundHandler<Object> {
-    private Logger logger = LoggerFactory.getLogger(getClass());
     static final ObjectMapper mapper = new ObjectMapper();
     @Autowired
     private List<BaseInServer> inServerList;
+    @Autowired
+    IChannelRegService channelRegService;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if(msg == null)
-            return;
-        msgHandle(ctx, msg);
-    }
-
-    private void msgHandle(ChannelHandlerContext ctx, Object msg) throws Exception {
-        for(int i=0; i<inServerList.size(); i++){
-            BaseInServer sv = inServerList.get(i);
-            if(sv.supports(msg)) {
-                sv.channelRead0(ctx, msg);
+        try {
+            if (msg == null)
                 return;
+            for (int i = 0; i < inServerList.size(); i++) {
+                BaseInServer sv = inServerList.get(i);
+                if (sv.supports(msg)) {
+                    sv.channelRead0(ctx, msg);
+                    return;
+                }
             }
+        }catch (Exception e){
+            log.error("sssssssss", e);
         }
-        return;
     }
 
     /*
@@ -68,7 +67,7 @@ public class BusinessInHandler extends SimpleChannelInboundHandler<Object> {
      * 每当从服务端收到客户端断开时
      */
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-        HttpURLMappingManager.instance().cancel(ctx.channel());
+        channelRegService.destroy(ctx.channel());
         super.handlerRemoved(ctx);
     }
 
@@ -82,8 +81,8 @@ public class BusinessInHandler extends SimpleChannelInboundHandler<Object> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
             throws Exception {
-        HttpURLMappingManager.instance().cancel(ctx.channel());
-        logger.error("exceptionCaught..msg:{}", cause.getMessage());
+        channelRegService.destroy(ctx.channel());
+        log.error("exceptionCaught..msg:{}", cause.getMessage());
         ctx.channel().close();
     }
 
@@ -99,18 +98,18 @@ public class BusinessInHandler extends SimpleChannelInboundHandler<Object> {
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent event = (IdleStateEvent) evt;
             if (event.state().equals(IdleState.READER_IDLE)) {
-                logger.info("READER_IDLE");
+                log.info("READER_IDLE");
                 // 超时关闭channel
                 ctx.close();
             } else if (event.state().equals(IdleState.WRITER_IDLE)) {
-                logger.info("WRITER_IDLE");
+                log.info("WRITER_IDLE");
             } else if (event.state().equals(IdleState.ALL_IDLE)) {
                 // 发送心跳
                 IdlePingEntity ping = new IdlePingEntity();
                 ping.setPingId(UUID.randomUUID().toString());
                 ping.setPingTime(new Date());
                 ctx.channel().writeAndFlush(mapper.writeValueAsString(ping));
-                logger.info("send ping channel:{}, id:{}", ctx.channel(), ping.getPingId());
+                log.info("send ping channel:{}, id:{}", ctx.channel(), ping.getPingId());
 
             }
         }

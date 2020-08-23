@@ -1,16 +1,15 @@
 package com.test.httpforward.webdemo;
 
+import com.test.httpforward.webdemo.po.Person;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestController
-@RequestMapping
 public class TestController {
     @Value("${aa:aadf}")
     private String aa;
@@ -21,54 +20,25 @@ public class TestController {
     @Value("${dd:dddf}")
     private String dd;
 
-    @RequestMapping("/cfg")
+    @GetMapping("/cfg")
     Map cfg() {
         Map<String, String> map = new HashMap<>();
         map.put("aa", aa);
         map.put("bb", bb);
         map.put("cc", cc);
         map.put("dd", dd);
-        System.out.println("ggggggggggggggggggggg====");
+        log.info("ggggggggggggggggggggg===={}", map);
         return map;
     }
-    @RequestMapping("/ccc/{id}")
+    @GetMapping("/ccc/{id}")
     String cfg(@PathVariable String id) {
         return "打的费request id is ===>>>"+ id;
     }
 
-    @RequestMapping("/testpostjson")
+    @PostMapping("/testpostjson")
     Person testpostjson(@RequestBody Person p) {
-        System.out.println("ggggggggggggggggggggg===="+ p);
+        log.info("ggggggggggggggggggggg===={}", p);
         return p;
-    }
-}
-
-class Person{
-    private String pName;
-    private int pAge;
-
-    public String getpName() {
-        return pName;
-    }
-
-    public void setpName(String pName) {
-        this.pName = pName;
-    }
-
-    public int getpAge() {
-        return pAge;
-    }
-
-    public void setpAge(int pAge) {
-        this.pAge = pAge;
-    }
-
-    @Override
-    public String toString() {
-        return "Person{" +
-                "pName='" + pName + '\'' +
-                ", pAge=" + pAge +
-                '}';
     }
 }
 

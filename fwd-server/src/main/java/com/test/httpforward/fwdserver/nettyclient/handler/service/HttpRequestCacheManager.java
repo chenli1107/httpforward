@@ -1,47 +1,42 @@
-package com.test.httpforward.fwdserver.server;
+package com.test.httpforward.fwdserver.nettyclient.handler.service;
 
+import com.test.httpforward.fwdserver.config.AppConfig;
 import io.netty.channel.Channel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.DelayQueue;
-import java.util.concurrent.Delayed;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 public class HttpRequestCacheManager {
-    private Logger logger = LoggerFactory.getLogger(getClass());
-    @Value("${http.netty.web.request.timeout:3000}")
-    private long requestTimeout;
+    @Autowired
+    AppConfig appConfig;
 
     //TODO 防止部分代理连接流量过大,可考虑根据client.channel分别存储限制大小, 或直接client.channel.attr(key)中存储限容量
     //存储requestId，接受到响应通过channel返回给web用户
-    private ConcurrentHashMap<String, RequestDelayedMessage> requestChannelMap = new ConcurrentHashMap();
+    public static ConcurrentHashMap<String, RequestDelayedMessage> requestChannelMap = new ConcurrentHashMap();
     //清除超时没收到response的request
-    private DelayQueue<RequestDelayedMessage> delayQueue = new DelayQueue<>();
+    private static DelayQueue delayQueue = new DelayQueue<>();
 
-
-    @PostConstruct
-    public void startClear(){
-        new Thread(()->{
-            while(true){
-                try {
-                    RequestDelayedMessage req =  delayQueue.take();
-                    requestChannelMap.remove(req.requestId);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+    //剔除超时的request
+    private static ThreadPoolExecutor executorService = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS,
+            delayQueue,
+            new ThreadFactory() {
+                AtomicInteger a = new AtomicInteger(0);
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread thread = new Thread(r, "rrrr-Thread-"+ a.getAndAdd(1));
+                    thread.setDaemon(false);
+                    return thread;
                 }
             }
-        }).start();
-    }
+    );
+
 
 
     public void put(String requestId, Channel channel) {
-        RequestDelayedMessage req = new RequestDelayedMessage(requestId, channel, requestTimeout);
+        RequestDelayedMessage req = new RequestDelayedMessage(requestId, channel, appConfig.getRequestTimeout());
         requestChannelMap.put(requestId, req);
         delayQueue.offer(req);
     }
@@ -55,7 +50,7 @@ public class HttpRequestCacheManager {
     }
 
 }
-class RequestDelayedMessage implements Delayed {
+class RequestDelayedMessage implements Delayed, Runnable {
     public final String requestId;
     public final Channel channel;
     public final long delay; //延迟时间。即等待时间
@@ -96,5 +91,10 @@ class RequestDelayedMessage implements Delayed {
                 ", delay=" + delay +
                 ", expire=" + expire +
                 '}';
+    }
+
+    @Override
+    public void run() {
+        HttpRequestCacheManager.requestChannelMap.remove(requestId);
     }
 }

@@ -1,10 +1,6 @@
 package com.test.httpforward.fwdclient.netty;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.test.fwdcommon.entity.HttpUrlMapping;
-import com.test.fwdcommon.utils.SpringContextHolder;
-import com.test.httpforward.fwdclient.AppConfig;
+import com.test.httpforward.fwdclient.config.AppConfig;
 import com.test.httpforward.fwdclient.netty.handler.BusinessInHandler;
 import com.test.httpforward.fwdclient.netty.handler.JsonToObjectInHandler;
 import io.netty.bootstrap.Bootstrap;
@@ -13,29 +9,19 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.json.JsonObjectDecoder;
 import io.netty.handler.codec.string.StringEncoder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 
 @Component
+@Slf4j
 public class ConnectionServer {
-    private Logger logger = LoggerFactory.getLogger(getClass());
     @Autowired
     private BusinessInHandler businessInHandler;
-
-    @Autowired
-    private HttpUrlMapping httpUrlMapping;
     @Autowired
     private AppConfig appConfig;
 
@@ -76,7 +62,7 @@ public class ConnectionServer {
 
 
     public void connection() {
-        logger.info("开始建立连接...");
+        log.info("开始建立连接...");
         try {
             //6.建立连接
             ChannelFuture channelFuture = bootstap.connect(appConfig.getServerIp(), appConfig.getServerPort());
@@ -86,85 +72,22 @@ public class ConnectionServer {
                     cf.channel().eventLoop().schedule(new Runnable() {
                         @Override
                         public void run() {
-                            logger.error("服务端链接不上，开始重连操作...");
+                            log.error("服务端链接不上，开始重连操作...");
                             connection();
                         }
                     }, 3L, TimeUnit.SECONDS);
                 } else {
-                    logger.info("服务端链接成功...");
-                    //注册http映射
-                    sendRegist(channelFuture.channel(), httpUrlMapping);
-                    openSystemIn(channelFuture.channel());
+                    log.info("服务端链接成功...");
                 }
             });
             channelFuture.sync();
 
 //            channelFuture.channel().closeFuture().sync();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("connection exception!", e);
         } finally {
             //8.关闭连接    //重连还是前实例channelFuture,此时不能关闭相关资源
 //            worker.shutdownGracefully();
         }
     }
-
-
-    /**
-     * 控制台输入注册http映射
-     * @param channel
-     */
-    public void openSystemIn(Channel channel){
-        new Thread(()-> {
-            try {
-                //7.控制台输入
-                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
-                ObjectMapper mapper = new ObjectMapper();
-                while (true) {
-                    System.out.println("注册请输入...格式如：{\"realWebServerHost\": \"localhost:port\", \"realWebServerPath\": \"/server\",  \"proxyServerPath\": \"/ppp\"}");
-                    String msg = bufferedReader.readLine();
-                    try {
-                        HttpUrlMapping mp = mapper.readValue(msg, HttpUrlMapping.class);
-                        sendRegist(channel, mp);
-                    }catch(Exception e){
-                        e.printStackTrace();
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }).start();
-    }
-
-    /**
-     *
-     * @param channel
-     * @param mp
-     * @return
-     */
-    public boolean sendRegist(Channel channel, HttpUrlMapping mp) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            if (mp == null || StringUtils.isEmpty(mp.getProxyServerPath())
-                    || StringUtils.isEmpty(mp.getRealWebServerHost())) {
-                logger.error("注册信息不完整.注册失败");
-                return false;
-            }
-            String sp = mp.getRealWebServerPath();
-            if (sp == null || "/".equals(sp))
-                mp.setRealWebServerPath("");
-            else if (sp.endsWith("/"))
-                mp.setRealWebServerPath(sp.substring(0, sp.lastIndexOf("/")));
-
-            channel.writeAndFlush(mapper.writeValueAsString(mp)).addListener((future) -> {
-                logger.info("已发送注册信息,等待返回结果通知...");
-            });
-            return true;
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return false;
-        }
-
-    }
-
-
 }
