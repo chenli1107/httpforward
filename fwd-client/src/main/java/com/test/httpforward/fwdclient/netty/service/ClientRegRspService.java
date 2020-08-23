@@ -1,7 +1,5 @@
 package com.test.httpforward.fwdclient.netty.service;
 
-import com.sun.deploy.association.RegisterFailedException;
-import com.test.fwdcommon.entity.req.IdlePingEntity;
 import com.test.fwdcommon.entity.rsp.ClientRegRsp;
 import com.test.fwdcommon.face.BaseInServer;
 import com.test.httpforward.fwdclient.config.AppConfig;
