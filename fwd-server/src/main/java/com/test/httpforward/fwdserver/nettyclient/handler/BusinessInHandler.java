@@ -29,18 +29,14 @@ public class BusinessInHandler extends SimpleChannelInboundHandler<Object> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-        try {
-            if (msg == null)
+        if (msg == null)
+            return;
+        for (int i = 0; i < inServerList.size(); i++) {
+            BaseInServer sv = inServerList.get(i);
+            if (sv.supports(msg)) {
+                sv.channelRead0(ctx, msg);
                 return;
-            for (int i = 0; i < inServerList.size(); i++) {
-                BaseInServer sv = inServerList.get(i);
-                if (sv.supports(msg)) {
-                    sv.channelRead0(ctx, msg);
-                    return;
-                }
             }
-        }catch (Exception e){
-            log.error("sssssssss", e);
         }
     }
 
