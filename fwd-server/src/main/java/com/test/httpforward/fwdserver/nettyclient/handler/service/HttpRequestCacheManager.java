@@ -38,7 +38,7 @@ public class HttpRequestCacheManager {
     public void put(String requestId, Channel channel) {
         RequestDelayedMessage req = new RequestDelayedMessage(requestId, channel, appConfig.getRequestTimeout());
         requestChannelMap.put(requestId, req);
-        delayQueue.offer(req);
+        delayQueue.put(req);
     }
 
     public Channel remove(String requestId) {
@@ -46,7 +46,7 @@ public class HttpRequestCacheManager {
         if(req==null)
             return null;
         delayQueue.remove(req);
-        return req == null ? null : req.channel;
+        return req.channel;
     }
 
 }

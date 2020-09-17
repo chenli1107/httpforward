@@ -77,6 +77,7 @@ public class NettyHttpServer {
             channelFuture.channel().closeFuture().sync();  //等待服务关闭，关闭后应该释放资源
         } catch (InterruptedException e) {
             log.error("server start exception!", e);
+            Thread.currentThread().interrupt();
         }finally {
             //8.优雅的关闭资源
             boss.shutdownGracefully();

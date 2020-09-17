@@ -49,6 +49,7 @@ public class HttpPackageReqHandler extends SimpleChannelInboundHandler<FullHttpR
             FullHttpResponse response = new DefaultFullHttpResponse(
                     HttpVersion.HTTP_1_1, HttpResponseStatus.GATEWAY_TIMEOUT);
             channelHandlerContext.channel().writeAndFlush(response);
+            return;
         }
 
         log.debug(fullHttpRequest.uri());
