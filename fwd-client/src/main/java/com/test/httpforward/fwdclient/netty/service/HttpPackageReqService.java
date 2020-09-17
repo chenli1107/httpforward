@@ -32,13 +32,7 @@ public class HttpPackageReqService implements BaseInServer<HttpPackageReq> {
     @Override
     public void channelRead0(ChannelHandlerContext ctx, HttpPackageReq msg) throws Exception {
         log.info("receive req: {}", new ObjectMapper().writeValueAsString(msg));
-        HttpPackageRsp rsp = null;
-        try {
-            rsp = httpRequestSend(msg);
-        }catch (Exception e){
-            log.error("HttpPackageRsp exception!!!", e);
-            return;
-        }
+        HttpPackageRsp rsp = httpRequestSend(msg);
         ctx.channel().writeAndFlush(mapper.writeValueAsString(rsp)).addListener((GenericFutureListener) future -> {
             log.info("send request[{}] rsp:{}", msg.getRequestId(), mapper.writeValueAsString(rsp));
         });
