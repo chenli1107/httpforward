@@ -32,9 +32,13 @@ public class HttpPackageReqService implements BaseInServer<HttpPackageReq> {
     @Override
     public void channelRead0(ChannelHandlerContext ctx, HttpPackageReq msg) throws Exception {
         log.info("receive req: {}", new ObjectMapper().writeValueAsString(msg));
-        HttpPackageRsp rsp = httpRequestSend(msg);
-        if (rsp == null)
+        HttpPackageRsp rsp = null;
+        try {
+            rsp = httpRequestSend(msg);
+        }catch (Exception e){
+            log.error("HttpPackageRsp exception!!!", e);
             return;
+        }
         ctx.channel().writeAndFlush(mapper.writeValueAsString(rsp)).addListener((GenericFutureListener) future -> {
             log.info("send request[{}] rsp:{}", msg.getRequestId(), mapper.writeValueAsString(rsp));
         });
@@ -72,6 +76,9 @@ public class HttpPackageReqService implements BaseInServer<HttpPackageReq> {
                 rsp = HttpUtils.postJson(req.getUrl(), content, headerMap);
             } else if (HttpMethod.GET.equals(method)) {
                 rsp = HttpUtils.getText(req.getUrl(), null, headerMap);
+            } else{
+                //TODO POST、GET之外其他请求暂未测试
+                return errorResponse(req.getRequestId(), req.getUrl(), "暂仅支持POST、GET请求");
             }
         }catch (HttpClientErrorException he){
             response.setHttpRspStatus(new HttpPackageRsp.HttpRspStatus(he.getStatusCode().value(), he.getStatusCode().getReasonPhrase()));

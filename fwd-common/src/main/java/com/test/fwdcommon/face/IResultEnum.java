@@ -54,7 +54,7 @@ public interface IResultEnum {
          */
         ERROR(1002),
         ;
-        public int code;
+        private int code;
     }
 }
 

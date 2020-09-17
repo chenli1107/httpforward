@@ -21,7 +21,7 @@ public class TestController {
     private String dd;
 
     @GetMapping("/cfg")
-    Map cfg() {
+    public Map cfg() {
         Map<String, String> map = new HashMap<>();
         map.put("aa", aa);
         map.put("bb", bb);
@@ -31,12 +31,12 @@ public class TestController {
         return map;
     }
     @GetMapping("/ccc/{id}")
-    String cfg(@PathVariable String id) {
+    public String cfg(@PathVariable String id) {
         return "打的费request id is ===>>>"+ id;
     }
 
     @PostMapping("/testpostjson")
-    Person testpostjson(@RequestBody Person p) {
+    public Person testpostjson(@RequestBody Person p) {
         log.info("ggggggggggggggggggggg===={}", p);
         return p;
     }
